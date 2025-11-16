@@ -1,0 +1,275 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  conductor
+  driver
+  owner
+  sacco
+  admin
+}
+
+enum FareType {
+  normal
+  rush_hour
+  off_peak
+  rain
+}
+
+enum PaymentStatus {
+  pending
+  received
+  failed
+}
+
+enum TripStatus {
+  pending
+  confirmed
+  completed
+  cancelled
+}
+
+model User {
+  id          String   @id @default(uuid())
+  name        String
+  email       String?
+  phoneNumber String   @unique
+  password    String
+  role        UserRole
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  conductorTrips         Trip[] @relation("ConductorTrips")
+  driverTrips            Trip[] @relation("DriverTrips")
+  ownedMatatus           Matatu[]
+  revenueOwnerSplits     RevenueSplit[] @relation("RevenueSplitOwner")
+  revenueDriverSplits    RevenueSplit[] @relation("RevenueSplitDriver")
+  revenueConductorSplits RevenueSplit[] @relation("RevenueSplitConductor")
+  alerts                 Alert[]
+  wallet                 Wallet?
+  withdrawals            Withdrawal[]
+  passwordResets         PasswordReset[]
+
+  @@index([phoneNumber])
+  @@index([role])
+}
+
+
+model Matatu {
+  id          String   @id @default(uuid())
+  plateNumber String   @unique
+  model       String?
+  capacity    Int      @default(14)
+  ownerId     String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  owner User  @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  trips Trip[]
+
+  @@index([ownerId])
+  @@index([plateNumber])
+}
+
+model Route {
+  id           String   @id @default(uuid())
+  name         String
+  from         String
+  to           String
+  distance     Float?   // in kilometers
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  fareRules FareRule[]
+  trips     Trip[]
+
+  @@unique([from, to])
+  @@index([name])
+}
+
+model FareRule {
+  id        String   @id @default(uuid())
+  routeId   String
+  fareType  FareType
+  amount    Float
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  route Route @relation(fields: [routeId], references: [id], onDelete: Cascade)
+
+  @@unique([routeId, fareType])
+  @@index([routeId])
+}
+
+model Trip {
+  id              String      @id @default(uuid())
+  routeId         String
+  matatuId        String
+  conductorId     String
+  driverId        String
+  fareType        FareType
+  passengerCount  Int
+  totalAmount     Float
+  driverConfirmed Boolean     @default(false)
+  ownerConfirmed  Boolean     @default(false)
+  status          TripStatus  @default(pending)
+  tripDate        DateTime    @default(now())
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
+
+  route     Route     @relation(fields: [routeId], references: [id])
+  matatu    Matatu    @relation(fields: [matatuId], references: [id])
+  conductor User      @relation("ConductorTrips", fields: [conductorId], references: [id])
+  driver    User      @relation("DriverTrips", fields: [driverId], references: [id])
+  payments  Payment[]
+  revenueSplit RevenueSplit?
+
+  @@index([conductorId])
+  @@index([driverId])
+  @@index([matatuId])
+  @@index([routeId])
+  @@index([status])
+  @@index([tripDate])
+}
+
+model Payment {
+  id              String        @id @default(uuid())
+  tripId          String
+  mpesaRequestId  String?       @unique
+  mpesaReceipt    String?       @unique
+  phoneNumber     String
+  amount          Float
+  status          PaymentStatus @default(pending)
+  callbackData    Json?
+  // Africa's Talking fields
+  providerRef     String?       @unique
+  checkoutRequest String?
+  providerRaw     Json?
+  confirmedAt     DateTime?
+  createdAt       DateTime      @default(now())
+  updatedAt       DateTime      @updatedAt
+
+  trip Trip @relation(fields: [tripId], references: [id], onDelete: Cascade)
+
+  @@index([tripId])
+  @@index([mpesaRequestId])
+  @@index([mpesaReceipt])
+  @@index([status])
+  @@index([providerRef])
+  @@index([checkoutRequest])
+}
+
+model RevenueSplit {
+  id                String   @id @default(uuid())
+  tripId            String   @unique
+  trip              Trip     @relation(fields: [tripId], references: [id], onDelete: Cascade)
+
+  ownerId           String
+  owner             User     @relation("RevenueSplitOwner", fields: [ownerId], references: [id])
+
+  driverId          String
+  driver            User     @relation("RevenueSplitDriver", fields: [driverId], references: [id])
+
+  conductorId       String
+  conductor         User     @relation("RevenueSplitConductor", fields: [conductorId], references: [id])
+
+  totalAmount       Float
+  ownerAmount       Float
+  driverAmount      Float
+  conductorAmount   Float
+  saccoAmount       Float
+  maintenanceAmount Float
+  blockchainHash    String?
+  createdAt         DateTime @default(now())
+  updatedAt         DateTime @updatedAt
+
+  @@index([tripId])
+  @@index([ownerId])
+  @@index([driverId])
+  @@index([conductorId])
+}
+
+model Alert {
+  id        String   @id @default(uuid())
+  userId    String
+  message   String
+  type      String   // e.g., "payment_received", "trip_confirmed", "revenue_split"
+  read      Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([read])
+  @@index([createdAt])
+}
+
+model Idempotency {
+  id        String   @id @default(uuid())
+  key       String   @unique
+  response  Json?
+  createdAt DateTime @default(now())
+  expiresAt DateTime
+
+  @@index([key])
+  @@index([expiresAt])
+}
+
+// Wallet model: one-to-one with User
+model Wallet {
+  id        String   @id @default(uuid())
+  userId    String   @unique
+  balance   Int      @default(0) // value in smallest currency unit (KES cents or shillings as integer)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+// Withdrawal requests made by users
+model Withdrawal {
+  id         String   @id @default(uuid())
+  userId     String
+  amount     Int      // requested amount (integer KES)
+  status     String   @default("PENDING") // PENDING | APPROVED | DECLINED
+  requestedAt DateTime @default(now())
+  processedAt DateTime?
+  processedBy String? // owner id who processed
+  note       String?  // optional note on approval/decline
+  meta       Json?    // provider data or audit info
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([status])
+  @@index([requestedAt])
+}
+
+// Password reset tokens with OTP
+model PasswordReset {
+  id        String   @id @default(uuid())
+  userId    String
+  phoneNumber String
+  otp       String   // 6-digit OTP code
+  token     String   @unique // secure token for reset
+  expiresAt DateTime
+  used      Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([phoneNumber])
+  @@index([token])
+  @@index([expiresAt])
+  @@index([used])
+}
+
