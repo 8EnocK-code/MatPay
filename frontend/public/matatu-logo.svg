@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 200" width="200" height="200">
+  <!-- Matatu Bus Body -->
+  <rect x="30" y="80" width="140" height="80" rx="8" fill="#00D9FF" stroke="#00A8CC" stroke-width="2"/>
+  
+  <!-- Bus Windows -->
+  <rect x="45" y="95" width="25" height="20" rx="3" fill="#001122" opacity="0.7"/>
+  <rect x="80" y="95" width="25" height="20" rx="3" fill="#001122" opacity="0.7"/>
+  <rect x="115" y="95" width="25" height="20" rx="3" fill="#001122" opacity="0.7"/>
+  <rect x="150" y="95" width="25" height="20" rx="3" fill="#001122" opacity="0.7"/>
+  
+  <!-- Wheels -->
+  <circle cx="60" cy="160" r="15" fill="#1a1a1a"/>
+  <circle cx="60" cy="160" r="8" fill="#333"/>
+  <circle cx="140" cy="160" r="15" fill="#1a1a1a"/>
+  <circle cx="140" cy="160" r="8" fill="#333"/>
+  
+  <!-- Roof Rack -->
+  <rect x="35" y="70" width="130" height="12" rx="4" fill="#00A8CC"/>
+  
+  <!-- Front Windshield -->
+  <polygon points="30,80 30,140 40,135 40,85" fill="#001122" opacity="0.6"/>
+  
+  <!-- Side Door -->
+  <rect x="50" y="120" width="20" height="40" rx="2" fill="#00A8CC" stroke="#00D9FF" stroke-width="1"/>
+  <line x1="60" y1="120" x2="60" y2="160" stroke="#00D9FF" stroke-width="1.5"/>
+  
+  <!-- Text/Initials -->
+  <text x="100" y="135" font-family="Arial, sans-serif" font-size="24" font-weight="bold" fill="#FFFFFF" text-anchor="middle">MP</text>
+</svg>
+

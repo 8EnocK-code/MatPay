@@ -2,6 +2,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Bus, ClipboardList, User, Building2 } from "lucide-react";
 import { RoleCard } from "@/components/RoleCard";
+import { MatatuLogo } from "@/components/MatatuLogo";
 import type { UserRole } from "@/types/matatu";
 
 
@@ -26,8 +27,8 @@ const Login: React.FC = () => {
     <div className="min-h-screen bg-gradient-to-br from-primary/10 via-background to-secondary/10 flex items-center justify-center p-4">
       <div className="w-full max-w-4xl">
         <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-20 h-20 rounded-full bg-primary mb-4">
-            <Bus className="w-12 h-12 text-primary-foreground" />
+          <div className="flex justify-center mb-4">
+            <MatatuLogo size={64} showText={true} />
           </div>
           <h1 className="text-4xl font-bold mb-2">Matatu Revenue Manager</h1>
           <p className="text-muted-foreground text-lg">
